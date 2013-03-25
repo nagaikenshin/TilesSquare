@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="ja">
+ <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <title>TilesSquare - Maps on jQuery</title>
+  <link rel="stylesheet" href="jQuery/css/blue/jquery-ui-1.10.1.custom.css" />
+  <script src="jQuery/js/jquery-1.9.1.js"></script>
+  <script src="jQuery/js/jquery-ui-1.10.1.custom.js"></script>
+  <script src="jQuery/js/jquery.mousewheel.js"></script>
+  <script src="TilesSquare/js/main.js"></script>
+  <style>
+   body {
+     margin: 0px;
+     padding: 0px;
+   }
+  </style>
+  <script>
+   $(window).load(function() { 
+     $.widget('tlsq.marker', $.tlsq.tsmarker, {
+       _create: function() {
+         this._super("_create");
+
+         this._on({
+           click: function(ev) {
+             // サインボードを作成
+             var elem = $(this.element),
+               eid = elem.attr("id"),
+               sid = eid + "_signboard",
+               board = $("<div />").tssignboard({
+                 id: sid,
+                 markerID: eid
+               })
+             board.tssignboard("open", this);
+
+             // 表示内容を取得
+             var uri = "json/" + encodeURI(encodeURI(this.options.title)) + ".json";
+             $.getJSON(uri, function(json) {
+               $("#" + board.tssignboard("option", "contentID"))
+                 .css("text-align", "center")
+                 .html("<h2>" + json.name + "</h2><p>" + json.adr + "</p><p><a href=\"" + json.jawp + "\">Wikipedia</a></p>");
+             });
+           }
+         });
+       }
+     });
+
+     var bcstMarkers = [
+       $("<a />").marker({ title: "BS-TBS", lon: 139.7345251, lat: 35.6718081 }),
+       $("<a />").marker({ title: "BSジャパン", lon: 139.7433442, lat: 35.6646059 }),
+       $("<a />").marker({ title: "BSフジ", lon: 139.7743514, lat: 35.6267227 }),
+       $("<a />").marker({ title: "BS日本", lon: 139.7368829, lat: 35.6869053 }),
+       $("<a />").marker({ title: "CNNj", lon: 139.7075553, lat: 35.6729961 }),
+       $("<a />").marker({ title: "GAORA", lon: 135.4974708, lat: 34.7096691 }),
+       $("<a />").marker({ title: "GyaO!", lon: 139.7312591, lat: 35.6662026 }),
+       $("<a />").marker({ title: "IBC岩手放送", lon: 141.1615972, lat: 39.6985786 }),
+       $("<a />").marker({ title: "NHKデジタル衛星ハイビジョン", lon: 139.6958895, lat: 35.6660371 }),
+       $("<a />").marker({ title: "NHK京都放送局", lon: 135.7461561, lat: 35.0174939 }),
+       $("<a />").marker({ title: "NHK仙台放送局", lon: 140.8754636, lat: 38.2695678 }),
+       $("<a />").marker({ title: "NHK佐賀放送局", lon: 130.3039523, lat: 33.2465559 }),
+       $("<a />").marker({ title: "NHK函館放送局", lon: 140.7367902, lat: 41.7735903 }),
+       $("<a />").marker({ title: "NHK北九州放送局", lon: 130.8754882, lat: 33.885809 }),
+       $("<a />").marker({ title: "NHK北見放送局", lon: 143.8845906, lat: 43.8104083 }),
+       $("<a />").marker({ title: "NHK名古屋放送局", lon: 136.9113282, lat: 35.1716396 }),
+       $("<a />").marker({ title: "NHK和歌山放送局", lon: 135.1695335, lat: 34.2221039 }),
+       $("<a />").marker({ title: "NHK大分放送局", lon: 131.6022784, lat: 33.2386548 }),
+       $("<a />").marker({ title: "NHK大津放送局", lon: 135.8760781, lat: 35.0053667 }),
+       $("<a />").marker({ title: "NHK大阪放送局", lon: 135.5200888, lat: 34.6827419 }),
+       $("<a />").marker({ title: "NHK奈良放送局", lon: 135.831545, lat: 34.6870203 }),
+       $("<a />").marker({ title: "NHK室蘭放送局", lon: 140.9802987, lat: 42.3161363 }),
+       $("<a />").marker({ title: "NHK宮崎放送局", lon: 131.4257928, lat: 31.9302544 }),
+       $("<a />").marker({ title: "NHK富山放送局", lon: 137.2124853, lat: 36.6964545 }),
+       $("<a />").marker({ title: "NHK山口放送局", lon: 131.4682306, lat: 34.1701938 }),
+       $("<a />").marker({ title: "NHK山形放送局", lon: 140.3318275, lat: 38.2514863 }),
+       $("<a />").marker({ title: "NHK岐阜放送局", lon: 136.757065, lat: 35.4258814 }),
+       $("<a />").marker({ title: "NHK岡山放送局", lon: 133.915802, lat: 34.6667163 }),
+       $("<a />").marker({ title: "NHK帯広放送局", lon: 143.1977335, lat: 42.9236824 }),
+       $("<a />").marker({ title: "NHK広島放送局", lon: 132.4553536, lat: 34.3905664 }),
+       $("<a />").marker({ title: "NHK徳島放送局", lon: 134.5539744, lat: 34.0727422 }),
+       $("<a />").marker({ title: "NHK放送センター", lon: 139.6955571, lat: 35.6657671 }),
+       $("<a />").marker({ title: "NHK教育テレビジョン", lon: 139.7006453, lat: 35.6647713 }),
+       $("<a />").marker({ title: "NHK新潟放送局", lon: 139.0336741, lat: 37.9129704 }),
+       $("<a />").marker({ title: "NHK旭川放送局", lon: 142.3590947, lat: 43.7690993 }),
+       $("<a />").marker({ title: "NHK札幌放送局", lon: 141.3563568, lat: 43.061682 }),
+       $("<a />").marker({ title: "NHK松山放送局", lon: 132.7606673, lat: 33.8402294 }),
+       $("<a />").marker({ title: "NHK松江放送局", lon: 133.0538775, lat: 35.4628103 }),
+       $("<a />").marker({ title: "NHK水戸放送局", lon: 140.469038, lat: 36.3780794 }),
+       $("<a />").marker({ title: "NHK沖縄放送局", lon: 127.6912104, lat: 26.2258805 }),
+       $("<a />").marker({ title: "NHK津放送局", lon: 136.5056614, lat: 34.7201901 }),
+       $("<a />").marker({ title: "NHK熊本放送局", lon: 130.7091188, lat: 32.8067528 }),
+       $("<a />").marker({ title: "NHK甲府放送局", lon: 138.5566829, lat: 35.6652737 }),
+       $("<a />").marker({ title: "NHK盛岡放送局", lon: 141.1380542, lat: 39.7199645 }),
+       $("<a />").marker({ title: "NHK神戸放送局", lon: 135.1882923, lat: 34.6952462 }),
+       $("<a />").marker({ title: "NHK福井放送局", lon: 136.2235433, lat: 36.067161 }),
+       $("<a />").marker({ title: "NHK福岡放送局", lon: 130.3792617, lat: 33.5816914 }),
+       $("<a />").marker({ title: "NHK福島放送局", lon: 140.4606241, lat: 37.751415 }),
+       $("<a />").marker({ title: "NHK秋田放送局", lon: 140.1318368, lat: 39.7158984 }),
+       $("<a />").marker({ title: "NHK総合テレビジョン", lon: 139.7006453, lat: 35.6647713 }),
+       $("<a />").marker({ title: "NHK衛星第1テレビジョン", lon: 139.6956679, lat: 35.6658571 }),
+       $("<a />").marker({ title: "NHK衛星第2テレビジョン", lon: 139.6957787, lat: 35.6659471 }),
+       $("<a />").marker({ title: "NHK金沢放送局", lon: 136.6614434, lat: 36.5694134 }),
+       $("<a />").marker({ title: "NHK釧路放送局", lon: 144.3887773, lat: 42.9793495 }),
+       $("<a />").marker({ title: "NHK長崎放送局", lon: 129.8710091, lat: 32.7540601 }),
+       $("<a />").marker({ title: "NHK長野放送局", lon: 138.1975596, lat: 36.6300719 }),
+       $("<a />").marker({ title: "NHK青森放送局", lon: 140.7593445, lat: 40.8195948 }),
+       $("<a />").marker({ title: "NHK静岡放送局", lon: 138.3788237, lat: 34.9794087 }),
+       $("<a />").marker({ title: "NHK高松放送局", lon: 134.044674, lat: 34.3468264 }),
+       $("<a />").marker({ title: "NHK高知放送局", lon: 133.5358977, lat: 33.5578871 }),
+       $("<a />").marker({ title: "NHK鳥取放送局", lon: 134.2329723, lat: 35.4971469 }),
+       $("<a />").marker({ title: "NHK鹿児島放送局", lon: 130.5617932, lat: 31.5945594 }),
+       $("<a />").marker({ title: "RKB毎日放送", lon: 130.3509608, lat: 33.5927179 }),
+       $("<a />").marker({ title: "SOLiVE24", lon: 140.0415667, lat: 35.6517892 }),
+       $("<a />").marker({ title: "TBSチャンネル", lon: 139.7346359, lat: 35.6718981 }),
+       $("<a />").marker({ title: "TBSテレビ", lon: 139.7343035, lat: 35.6716281 }),
+       $("<a />").marker({ title: "TBSニュースバード", lon: 139.7344143, lat: 35.6717181 }),
+       $("<a />").marker({ title: "TVQ九州放送", lon: 130.8692803, lat: 33.8838869 }),
+       $("<a />").marker({ title: "WOWOW", lon: 139.7333531, lat: 35.6727686 }),
+       $("<a />").marker({ title: "あいテレビ", lon: 132.7556456, lat: 33.8337911 }),
+       $("<a />").marker({ title: "さくらんぼテレビジョン", lon: 140.3500253, lat: 38.2781337 }),
+       $("<a />").marker({ title: "とちぎテレビ", lon: 139.8819485, lat: 36.5671859 }),
+       $("<a />").marker({ title: "びわ湖放送", lon: 135.870959, lat: 34.9911681 }),
+       $("<a />").marker({ title: "アニメシアターX", lon: 139.7439025, lat: 35.6644171 }),
+       $("<a />").marker({ title: "サガテレビ", lon: 130.3007748, lat: 33.2465169 }),
+       $("<a />").marker({ title: "サンテレビジョン", lon: 135.2130103, lat: 34.6662412 }),
+       $("<a />").marker({ title: "スカイ・エー", lon: 135.4865109, lat: 34.693268 }),
+       $("<a />").marker({ title: "スター・チャンネル", lon: 139.7429246, lat: 35.6716245 }),
+       $("<a />").marker({ title: "チューリップテレビ", lon: 137.020487, lat: 36.7534381 }),
+       $("<a />").marker({ title: "テレビせとうち", lon: 133.919724, lat: 34.6581591 }),
+       $("<a />").marker({ title: "テレビユー山形", lon: 139.8333573, lat: 38.9080558 }),
+       $("<a />").marker({ title: "テレビユー福島", lon: 140.4344763, lat: 37.7592106 }),
+       $("<a />").marker({ title: "テレビ信州", lon: 138.1880273, lat: 36.6367816 }),
+       $("<a />").marker({ title: "テレビ北海道", lon: 141.3660032, lat: 43.0634959 }),
+       $("<a />").marker({ title: "テレビ和歌山", lon: 135.1552862, lat: 34.2563917 }),
+       $("<a />").marker({ title: "テレビ埼玉", lon: 139.6440462, lat: 35.8622958 }),
+       $("<a />").marker({ title: "テレビ大分", lon: 131.6028617, lat: 33.2466849 }),
+       $("<a />").marker({ title: "テレビ大阪", lon: 135.521019, lat: 34.6906968 }),
+       $("<a />").marker({ title: "テレビ宮崎", lon: 131.4113412, lat: 31.9308233 }),
+       $("<a />").marker({ title: "テレビ山口", lon: 131.4936254, lat: 34.1609394 }),
+       $("<a />").marker({ title: "テレビ山梨", lon: 138.5759074, lat: 35.6455128 }),
+       $("<a />").marker({ title: "テレビ岩手", lon: 141.1540144, lat: 39.7013697 }),
+       $("<a />").marker({ title: "テレビ愛媛", lon: 132.759762, lat: 33.8326136 }),
+       $("<a />").marker({ title: "テレビ愛知", lon: 136.9011878, lat: 35.1617128 }),
+       $("<a />").marker({ title: "テレビ新広島", lon: 132.4751967, lat: 34.3776624 }),
+       $("<a />").marker({ title: "テレビ新潟放送網", lon: 139.0278581, lat: 37.9045822 }),
+       $("<a />").marker({ title: "テレビ朝日", lon: 139.730951, lat: 35.6596034 }),
+       $("<a />").marker({ title: "テレビ東京", lon: 139.7434303, lat: 35.6639616 }),
+       $("<a />").marker({ title: "テレビ熊本", lon: 130.70778, lat: 32.8395276 }),
+       $("<a />").marker({ title: "テレビ神奈川", lon: 139.6388226, lat: 35.4472713 }),
+       $("<a />").marker({ title: "テレビ西日本", lon: 130.3523996, lat: 33.5926039 }),
+       $("<a />").marker({ title: "テレビ金沢", lon: 136.6034563, lat: 36.5690457 }),
+       $("<a />").marker({ title: "テレビ長崎", lon: 129.8739006, lat: 32.7491662 }),
+       $("<a />").marker({ title: "テレビ静岡", lon: 138.4253442, lat: 34.9900835 }),
+       $("<a />").marker({ title: "テレビ高知", lon: 133.5502378, lat: 33.5655283 }),
+       $("<a />").marker({ title: "テレ朝チャンネル", lon: 139.730951, lat: 35.6596034 }),
+       $("<a />").marker({ title: "ビーエス朝日", lon: 139.7074445, lat: 35.6729061 }),
+       $("<a />").marker({ title: "フジテレビジョン", lon: 139.7742406, lat: 35.6266327 }),
+       $("<a />").marker({ title: "ワールド・ハイビジョン・チャンネル", lon: 139.7028728, lat: 35.6657768 }),
+       $("<a />").marker({ title: "三重テレビ放送", lon: 136.4986532, lat: 34.7353349 }),
+       $("<a />").marker({ title: "中京テレビ放送", lon: 136.9675185, lat: 35.1465313 }),
+       $("<a />").marker({ title: "中国放送", lon: 132.4616305, lat: 34.4020237 }),
+       $("<a />").marker({ title: "中部日本放送", lon: 136.9164112, lat: 35.1691928 }),
+       $("<a />").marker({ title: "九州朝日放送", lon: 130.3957659, lat: 33.5957734 }),
+       $("<a />").marker({ title: "京都放送", lon: 135.7589076, lat: 35.0235103 }),
+       $("<a />").marker({ title: "仙台放送", lon: 140.8741272, lat: 38.2744839 }),
+       $("<a />").marker({ title: "信越放送", lon: 138.1878717, lat: 36.649838 }),
+       $("<a />").marker({ title: "北日本放送", lon: 137.2142541, lat: 36.7048089 }),
+       $("<a />").marker({ title: "北海道テレビ放送", lon: 141.3760737, lat: 43.0267166 }),
+       $("<a />").marker({ title: "北海道放送", lon: 141.3492406, lat: 43.0627456 }),
+       $("<a />").marker({ title: "北海道文化放送", lon: 141.3354337, lat: 43.0603621 }),
+       $("<a />").marker({ title: "北陸放送", lon: 136.6599855, lat: 36.5582397 }),
+       $("<a />").marker({ title: "北陸朝日放送", lon: 136.6036677, lat: 36.5619827 }),
+       $("<a />").marker({ title: "千葉テレビ放送", lon: 140.1351825, lat: 35.6144062 }),
+       $("<a />").marker({ title: "南日本放送", lon: 130.5520971, lat: 31.5824078 }),
+       $("<a />").marker({ title: "南海放送", lon: 132.7583314, lat: 33.8408598 }),
+       $("<a />").marker({ title: "名古屋テレビ放送", lon: 136.9032962, lat: 35.150631 }),
+       $("<a />").marker({ title: "四国放送", lon: 134.5588517, lat: 34.073856 }),
+       $("<a />").marker({ title: "大分放送", lon: 131.6269313, lat: 33.2415526 }),
+       $("<a />").marker({ title: "大分朝日放送", lon: 131.6053475, lat: 33.2493682 }),
+       $("<a />").marker({ title: "奈良テレビ放送", lon: 135.8277394, lat: 34.6991993 }),
+       $("<a />").marker({ title: "宮城テレビ放送", lon: 140.9354877, lat: 38.2696363 }),
+       $("<a />").marker({ title: "宮崎放送", lon: 131.4223628, lat: 31.9171837 }),
+       $("<a />").marker({ title: "富山テレビ放送", lon: 137.2009348, lat: 36.6805093 }),
+       $("<a />").marker({ title: "山口放送", lon: 131.8149264, lat: 34.0635989 }),
+       $("<a />").marker({ title: "山口朝日放送", lon: 131.4730216, lat: 34.1749379 }),
+       $("<a />").marker({ title: "山形テレビ", lon: 140.3114738, lat: 38.2601657 }),
+       $("<a />").marker({ title: "山形放送", lon: 140.3387878, lat: 38.2563415 }),
+       $("<a />").marker({ title: "山梨放送", lon: 138.5709787, lat: 35.6683543 }),
+       $("<a />").marker({ title: "山陰中央テレビジョン放送", lon: 133.0722803, lat: 35.4897854 }),
+       $("<a />").marker({ title: "山陰放送", lon: 133.3398742, lat: 35.4385459 }),
+       $("<a />").marker({ title: "山陽放送", lon: 133.9326225, lat: 34.6645868 }),
+       $("<a />").marker({ title: "岐阜放送", lon: 136.7515329, lat: 35.4109581 }),
+       $("<a />").marker({ title: "岡山放送", lon: 133.9238923, lat: 34.681387 }),
+       $("<a />").marker({ title: "岩手めんこいテレビ", lon: 141.1214121, lat: 39.6923059 }),
+       $("<a />").marker({ title: "岩手朝日テレビ", lon: 141.133994, lat: 39.7005775 }),
+       $("<a />").marker({ title: "広島テレビ放送", lon: 132.4583478, lat: 34.390347 }),
+       $("<a />").marker({ title: "広島ホームテレビ", lon: 132.4629465, lat: 34.4136532 }),
+       $("<a />").marker({ title: "愛媛朝日テレビ", lon: 132.7586567, lat: 33.8243423 }),
+       $("<a />").marker({ title: "放送大学学園", lon: 140.0500522, lat: 35.6533615 }),
+       $("<a />").marker({ title: "新潟テレビ21", lon: 139.0549052, lat: 37.9246028 }),
+       $("<a />").marker({ title: "新潟放送", lon: 139.0281996, lat: 37.9089818 }),
+       $("<a />").marker({ title: "新潟総合テレビ", lon: 139.0507089, lat: 37.9144706 }),
+       $("<a />").marker({ title: "日テレG+", lon: 139.7600564, lat: 35.6644937 }),
+       $("<a />").marker({ title: "日テレNEWS24", lon: 139.7599456, lat: 35.6644037 }),
+       $("<a />").marker({ title: "日テレプラス", lon: 139.7369937, lat: 35.6869953 }),
+       $("<a />").marker({ title: "日本BS放送", lon: 139.7608167, lat: 35.6999189 }),
+       $("<a />").marker({ title: "日本テレビ放送網", lon: 139.7598348, lat: 35.6643137 }),
+       $("<a />").marker({ title: "日本放送協会", lon: 139.6954463, lat: 35.6656771 }),
+       $("<a />").marker({ title: "日本海テレビジョン放送", lon: 134.223231, lat: 35.5151142 }),
+       $("<a />").marker({ title: "日経CNBC", lon: 139.7681638, lat: 35.6896287 }),
+       $("<a />").marker({ title: "朝日ニュースター", lon: 139.7077527, lat: 35.6727011 }),
+       $("<a />").marker({ title: "朝日放送", lon: 135.488458, lat: 34.6935958 }),
+       $("<a />").marker({ title: "札幌テレビ放送", lon: 141.3446272, lat: 43.0619567 }),
+       $("<a />").marker({ title: "東京メトロポリタンテレビジョン", lon: 139.7434656, lat: 35.6851563 }),
+       $("<a />").marker({ title: "東北放送", lon: 140.8560188, lat: 38.2467477 }),
+       $("<a />").marker({ title: "東日本放送", lon: 140.8712698, lat: 38.3020971 }),
+       $("<a />").marker({ title: "東海テレビ放送", lon: 136.9135392, lat: 35.1708008 }),
+       $("<a />").marker({ title: "毎日放送", lon: 135.4999233, lat: 34.7084833 }),
+       $("<a />").marker({ title: "沖縄テレビ放送", lon: 127.6780568, lat: 26.2138622 }),
+       $("<a />").marker({ title: "瀬戸内海放送", lon: 134.0300579, lat: 34.3418959 }),
+       $("<a />").marker({ title: "熊本放送", lon: 130.703325, lat: 32.7967563 }),
+       $("<a />").marker({ title: "熊本朝日放送", lon: 130.6910542, lat: 32.7867485 }),
+       $("<a />").marker({ title: "熊本県民テレビ", lon: 130.6996257, lat: 32.7854461 }),
+       $("<a />").marker({ title: "琉球放送", lon: 127.6792619, lat: 26.2160781 }),
+       $("<a />").marker({ title: "琉球朝日放送", lon: 127.6793623, lat: 26.2161681 }),
+       $("<a />").marker({ title: "石川テレビ放送", lon: 136.6056247, lat: 36.5886292 }),
+       $("<a />").marker({ title: "福井テレビジョン放送", lon: 136.2534507, lat: 36.0527807 }),
+       $("<a />").marker({ title: "福井放送", lon: 136.2486196, lat: 36.0976588 }),
+       $("<a />").marker({ title: "福岡放送", lon: 130.4083096, lat: 33.5805558 }),
+       $("<a />").marker({ title: "福島テレビ", lon: 140.4659176, lat: 37.7644303 }),
+       $("<a />").marker({ title: "福島中央テレビ", lon: 140.3736327, lat: 37.3930107 }),
+       $("<a />").marker({ title: "福島放送", lon: 140.3564199, lat: 37.4078504 }),
+       $("<a />").marker({ title: "秋田テレビ", lon: 140.1012919, lat: 39.7238574 }),
+       $("<a />").marker({ title: "秋田放送", lon: 140.0963676, lat: 39.7184383 }),
+       $("<a />").marker({ title: "秋田朝日放送", lon: 140.0862492, lat: 39.7168463 }),
+       $("<a />").marker({ title: "群馬テレビ", lon: 139.059302, lat: 36.4199604 }),
+       $("<a />").marker({ title: "西日本放送", lon: 134.0509848, lat: 34.3476459 }),
+       $("<a />").marker({ title: "讀賣テレビ放送", lon: 135.5341152, lat: 34.6943327 }),
+       $("<a />").marker({ title: "長崎国際テレビ", lon: 129.8728591, lat: 32.7427695 }),
+       $("<a />").marker({ title: "長崎放送", lon: 129.8765726, lat: 32.7510661 }),
+       $("<a />").marker({ title: "長崎文化放送", lon: 129.8629041, lat: 32.7640423 }),
+       $("<a />").marker({ title: "長野放送", lon: 138.1814917, lat: 36.644122 }),
+       $("<a />").marker({ title: "長野朝日放送", lon: 138.1917768, lat: 36.6422171 }),
+       $("<a />").marker({ title: "関西テレビ放送", lon: 135.5103863, lat: 34.704734 }),
+       $("<a />").marker({ title: "青森テレビ", lon: 140.7682715, lat: 40.8197282 }),
+       $("<a />").marker({ title: "青森放送", lon: 140.7711935, lat: 40.8184117 }),
+       $("<a />").marker({ title: "青森朝日放送", lon: 140.7393943, lat: 40.7864474 }),
+       $("<a />").marker({ title: "静岡放送", lon: 138.4055885, lat: 34.9601031 }),
+       $("<a />").marker({ title: "静岡朝日テレビ", lon: 138.3969555, lat: 34.9768232 }),
+       $("<a />").marker({ title: "静岡第一テレビ", lon: 138.3910844, lat: 34.9553617 }),
+       $("<a />").marker({ title: "高知さんさんテレビ", lon: 133.5623427, lat: 33.5532662 }),
+       $("<a />").marker({ title: "高知放送", lon: 133.5346089, lat: 33.5589452 }),
+       $("<a />").marker({ title: "鹿児島テレビ放送", lon: 130.5313714, lat: 31.5613902 }),
+       $("<a />").marker({ title: "鹿児島放送", lon: 130.5606748, lat: 31.5630323 }),
+       $("<a />").marker({ title: "鹿児島讀賣テレビ", lon: 130.5649271, lat: 31.567318 })
+     ];
+
+     $("#mapContainer").tsmap({
+//       width: 800,
+//       height: 500,
+       tss: [
+         new OSMTilesSquare()
+//         new MapQuestOSMTilesSquare()
+       ],
+       zoom: 5,
+       onCreate: function(mapid, ovlsid, popsid) {
+         $("#" + mapid).tsmap("select", "default");
+       },
+       onActivate: function(ts) {
+         $("#" + ts.ovlsid).tsoverlays("mergeOverlays", bcstMarkers);
+       }
+     });
+   });
+  </script>
+ </head>
+ <body>
+  <div id="mapContainer"></div>
+ </body>
+</html>
