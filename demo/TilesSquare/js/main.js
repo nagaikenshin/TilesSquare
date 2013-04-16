@@ -1,11 +1,11 @@
 /*!
- * TilesSquare Maps on jQuery v0.2
+ * TilesSquare Maps on jQuery v0.2.2
  * http://tilessquare.org/
  *
  * Copyright 2013 NAGAI Kenshin
  * Released under the MIT license
  *
- * Date: 2013-3-17
+ * Date: 2013-4-10
  */
 
 // 引数なしを弾く機能付きの引数マージ
@@ -464,9 +464,9 @@ function TilesSquare(options) {
         var overlays = $("#" + this.ovlsid).tsoverlays("beforeDrag", this, options),
             popups = $("#" + this.popsid).tspopups("beforeDrag", this, options);
         this.draw();
-        if(this.afterDrag) this.afterDrag(this, options);
         overlays.tsoverlays("afterDrag", this, options);
         popups.tspopups("afterDrag", this, options);
+        if(this.afterDrag) this.afterDrag(this, options);
     };
 
     this.onMove = function(options) {
@@ -594,9 +594,9 @@ function TilesSquare(options) {
         var overlays = $("#" + this.ovlsid).tsoverlays("beforeResize", this, resizeReq),
             popups = $("#" + this.popsid).tspopups("beforeResize", this, resizeReq);
         this.draw();
-        if(this.afterResize) this.afterResize(this, resizeReq);
         overlays.tsoverlays("afterResize", this, resizeReq);
         popups.tspopups("afterResize", this, resizeReq);
+        if(this.afterResize) this.afterResize(this, resizeReq);
     };
 
     this.wheel2deltaZ = function(wheel) {
@@ -909,14 +909,14 @@ function OSMTilesSquare(options) {
             $("#" + this.popsid).tspopups("inMoving", this, moveReq, dexy);
         } else if(moveReq) {
             // ムーブ終了
-            if(this.afterMove) this.afterMove(this, moveReq, dexy);
             $("#" + this.ovlsid).tsoverlays("afterMove", this, moveReq, dexy);
             $("#" + this.popsid).tspopups("afterMove", this, moveReq, dexy);
+            if(this.afterMove) this.afterMove(this, moveReq, dexy);
         } else if(zoomReq) {
             // ズーム終了
-            if(this.afterZoom) this.afterZoom(this, zoomReq, dexy);
             $("#" + this.ovlsid).tsoverlays("afterZoom", this, zoomReq, dexy);
             $("#" + this.popsid).tspopups("afterZoom", this, zoomReq, dexy);
+            if(this.afterZoom) this.afterZoom(this, zoomReq, dexy);
         }
     };
 
@@ -1203,7 +1203,7 @@ function TSTouchHandler(options) {
 TSTouchHandler.prototype = new TSPointerHandler;
 
 (function($) {
-    var tsVersion = "0.2.1",
+    var tsVersion = "0.2.2",
         agent = navigator.userAgent,
         isIOS = (agent.search(/iPhone/) != -1 || agent.search(/iPad/) != -1 || agent.search(/iPod/) != -1),
         isAndroid = (agent.search(/Android/) != -1);
@@ -1440,7 +1440,7 @@ TSTouchHandler.prototype = new TSPointerHandler;
             if(this.options.id) {
                 elem.attr("id", this.options.id);
             } else {
-                this.options.id = "overlay_" + (new Date()).getTime();
+                this.options.id = "overlay_" + (new Date()).getTime() + ~~(Math.random() * 1000000);
                 elem.attr("id", this.options.id);
             }
 
@@ -1520,10 +1520,15 @@ TSTouchHandler.prototype = new TSPointerHandler;
                 .css("margin", "0px")
                 .css("padding", "0px")
                 .css("border-style", "none")
+                .css("user-select", "none")
+                .css("-moz-user-select", "none")
+                .css("-webkit-user-select", "none")
+                .css("-ms-user-select", "none")
                 .attr("width", this.options.width)
                 .attr("height", this.options.height)
                 .attr("src", this.options.src)
-                .attr("alt", this.options.title);
+                .attr("alt", this.options.title)
+                .attr("onSelectStart", "return false;");
             this.element.append(img);
 
             this._on({
@@ -1953,6 +1958,7 @@ TSTouchHandler.prototype = new TSPointerHandler;
                 closeImg = $("<img />")
                     .css("margin", "0px")
                     .css("padding", "0px")
+                    .css("border-style", "none")
                     .attr("src", ser)
                     .attr("alt", "close button");
             closeBtn.append(closeImg);
@@ -2019,7 +2025,7 @@ TSTouchHandler.prototype = new TSPointerHandler;
                     .css("margin", "0px")
                     .css("padding", "0px")
                     .css("position", "absolute")
-                    .css("border-width", "0px")
+                    .css("border-style", "none")
                     .css("left", (oofs.left - pofs.left) + "px")
                     .css("top", (oofs.top - pofs.top) + "px"),
                 elem = this.element;
