@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+ <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <title>TSRouteSnap</title>
+  <link rel="stylesheet" href="jQuery/css/blue/jquery-ui-1.10.1.custom.css" />
+  <script src="jQuery/js/jquery-1.9.1.js"></script>
+  <script src="jQuery/js/jquery-ui-1.10.1.custom.js"></script>
+  <script src="jQuery/js/jquery.mousewheel.js"></script>
+  <script src="TilesSquare/js/main-min.js"></script>
+  <script src="TilesSquare/js/tsRouteSnap.js"></script>
+  <style>
+   body {
+     margin: 0px;
+     padding: 0px;
+   }
+   #tsRouteSnapFrame {
+     margin: 5px auto;
+     padding: 10px;
+     width: 1000px;
+     background-color: #ffd8a0;
+     border: solid 1px #eee;
+     border-radius: 10px;
+   }
+   #tsRouteSnapHeader {
+     background-color: #ffd8a0;
+     font-size: 12px;
+     text-align: center;
+   }
+   #tsRouteSnapHeader input {
+     font-size: 10px;
+   }
+   #tsRouteSnapFooter {
+     padding: 3px 8px;
+     background-color: #ffd8a0;
+     font-size: 12px;
+     text-align: center;
+   }
+   #tsRouteSnapFooter input {
+     font-size: 10px;
+   }
+   #tsRouteSnap_csvText {
+     width: 500px;
+   }
+  </style>
+  <script>
+   $(window).load(function() { 
+     $("#tsRouteSnap").tsroutesnap({
+       width: 1000,
+       height: 500,
+       lon: 136.9064210,
+       lat: 35.1814330,
+       zoom: 10,
+       onChangeData: function(ts, toutePoles, color) {
+         var csvText = $("#tsRouteSnap").tsroutesnap("buildCSVText", ts, toutePoles, color);
+         $("#tsRouteSnap_csvText").val(csvText);
+       }
+     });
+   });
+
+   function loadCSVText() {
+     $("#tsRouteSnap").tsroutesnap("loadCSVText", $("#tsRouteSnap_csvText").val());
+   }
+
+   function reset() {
+     $("#tsRouteSnap").tsroutesnap("reset");
+     $("#tsRouteSnap_csvText").val("");
+   }
+  </script>
+ </head>
+ <body>
+  <div id="tsRouteSnapFrame">
+   <div id="tsRouteSnap"></div>
+   <div id="tsRouteSnapFooter">
+    <label for="tsRouteSnap_csvText">CSV文字列: </label>
+    <input id="tsRouteSnap_csvText" type="text" />
+    <input type="button" value="読込" onclick="loadCSVText();" />
+    &nbsp;
+    <input type="button" value="全消去" onclick="reset();" />
+   </div>
+  </div>
+ </body>
+</html>

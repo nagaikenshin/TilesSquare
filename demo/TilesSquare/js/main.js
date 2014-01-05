@@ -1,11 +1,11 @@
 /*!
- * TilesSquare Maps on jQuery v0.2.2
+ * TilesSquare Maps on jQuery v0.3.0
  * http://tilessquare.org/
  *
- * Copyright 2013 NAGAI Kenshin
+ * Copyright 2013-2014 NAGAI Kenshin
  * Released under the MIT license
  *
- * Date: 2013-4-10
+ * Date: 2014-1-5
  */
 
 // 引数なしを弾く機能付きの引数マージ
@@ -266,9 +266,12 @@ function TilesSquare(options) {
         this.inMoving = options.inMoving;
         this.afterMove = options.afterMove;
         this.beforeZoom = options.beforeZoom;
+        this.inZooming = options.inZooming;
         this.afterZoom = options.afterZoom;
         this.beforeResize = options.beforeResize;
         this.afterResize = options.afterResize;
+        this.onDraw = options.onDraw;
+        this.onLoaded = options.onLoaded;
     };
 
     this.destroy = function() {};
@@ -421,7 +424,7 @@ function TilesSquare(options) {
         }),
 
         prj2 = this.getProjection({
-            zoom: this.options.zoom,
+            zoom: options.zoom ? options.zoom : this.options.zoom,
             lon: options.lon,
             lat: options.lat
         });
@@ -696,7 +699,7 @@ function OSMTilesSquare(options) {
             cxy = cPrj.getXY(),
 
         // タイル読み込み始点・終点を計算
-            pgrsvs = [ 1, 1.2 ],  // 中央から読み込み、さらに先読み
+            pgrsvs = [ 1, 1.1 ],  // 中央から読み込み、さらに先読み
             dldrs = this.options.dldrs;
         for(var idx = 0; idx < pgrsvs.length; idx++) {
             var xno1 = Math.floor(cxy.x - this.lhalf * pgrsvs[idx]),
@@ -886,6 +889,7 @@ function OSMTilesSquare(options) {
                 }
             }
         }
+        if(this.onDraw) this.onDraw(this);
 
         if(this.dragTimer === null) {
             // dragTimerがセットされているとまたすぐdrawが呼ばれる
@@ -894,6 +898,7 @@ function OSMTilesSquare(options) {
                 this.drawTimer = setTimeout(function() { self.draw(); }, this.options.interval);
             } else {
                 this.dispose();
+				if(this.onLoaded) this.onLoaded(this);
             }
         }
 
@@ -904,9 +909,14 @@ function OSMTilesSquare(options) {
 
         if(this.moveReq) {
             // ムーブアニメ中
-            if(this.inMoving) this.inMoving(this, moveReq, dexy);
-            $("#" + this.ovlsid).tsoverlays("inMoving", this, moveReq, dexy);
-            $("#" + this.popsid).tspopups("inMoving", this, moveReq, dexy);
+            if(this.inMoving) this.inMoving(this, this.moveReq, dexy);
+            $("#" + this.ovlsid).tsoverlays("inMoving", this, this.moveReq, dexy);
+            $("#" + this.popsid).tspopups("inMoving", this, this.moveReq, dexy);
+        } else if(this.zoomReq) {
+            // ズームアニメ中
+            if(this.inZooming) this.inZooming(this, this.zoomReq, dexy);
+            $("#" + this.ovlsid).tsoverlays("inZooming", this, this.zoomReq, dexy);
+            $("#" + this.popsid).tspopups("inZooming", this, this.zoomReq, dexy);
         } else if(moveReq) {
             // ムーブ終了
             $("#" + this.ovlsid).tsoverlays("afterMove", this, moveReq, dexy);
@@ -986,26 +996,54 @@ function TSMouseHandler(options) {
     this.init = function(options) {
         var map = options.map;
         map.isMouseDown = false;
+        map.isMouseMove = false;
         map.pageX = 0;
         map.pageY = 0;
+        map.singleTimer = null;
     };
 
     this.onMouseDown = function(ev) {
         this.isMouseDown = true;
+        this.isMouseMove = false;
         this.pageX = ev.pageX;
         this.pageY = ev.pageY;
     };
 
     this.onMouseUp = function(ev) {
+    	if(!this.isMouseMove) {
+    		if(this.options.onPointerSingle) {
+				if(this.singleTimer !== null) {
+					clearTimeout(this.singleTimer);
+				}
+    			var self = this,
+    				elem = $(ev.target),
+    				ts = this.options.active,
+    				offset = elem.offset(),
+    				exy = {
+						elemX: ev.pageX - offset.left,
+						elemY: ev.pageY - offset.top
+					},
+					dexy = {
+						deltaElemX: exy.elemX - (ts.width >> 1),
+						deltaElemY: exy.elemY - (ts.height >> 1)
+					},
+					lonlat = ts.deltaElem2LonLat(dexy);
+				this.singleTimer = setTimeout(function() {
+					self.options.onPointerSingle(ts, exy, lonlat);
+				}, 300);
+    		}
+    	}
         this.isMouseDown = false;
-        var canvas = document.getElementById(this.cvsid);
+        this.isMouseMove = false;
+        var canvas = document.getElementById(this.options.cvsid);
         $(canvas).css("cursor", "default");
     };
 
     this.onMouseMove = function(ev) {
+        this.isMouseMove = true;
         if(this.isMouseDown) {
-            var canvas = document.getElementById(this.cvsid);
-            $(canvas).css("cursor", "move");
+            var canvas = document.getElementById(this.options.cvsid);
+            $(canvas).css("cursor", "all-scroll");
             this.onDrag({
                 deltaElemX: this.pageX - ev.pageX,
                 deltaElemY: this.pageY - ev.pageY
@@ -1017,11 +1055,16 @@ function TSMouseHandler(options) {
 
     this.onMouseOut = function(ev) {
         this.isMouseDown = false;
-        var canvas = document.getElementById(this.cvsid);
+        this.isMouseMove = false;
+        var canvas = document.getElementById(this.options.cvsid);
         $(canvas).css("cursor", "default");
     };
 
     this.onDoubleClick = function(ev) {
+		if(this.singleTimer !== null) {
+			clearTimeout(this.singleTimer);
+			this.singleTimer = null;
+		}
         var elem = $(ev.target),
             offset = elem.offset();
         this.onZoom({
@@ -1071,8 +1114,9 @@ function TSTouchHandler(options) {
         var map = options.map;
         map.touches = [];
         map.pushTouches = this.pushTouches;
-        map.touchEnds = [];
+        map.touchEnds = [ (new Date()).getTime() ]; // 初期値はシングルタップ判定のため
         map.pushTouchEnds = this.pushTouchEnds;
+        map.singleTimer = null;
     };
 
     this.pushTouches = function(ev) {
@@ -1162,7 +1206,32 @@ function TSTouchHandler(options) {
 
         // ダブルタップ判定
         var ttes = this.touchEnds;
-        if(ttes.length < 2 || ttes[1] - ttes[0] > 300) {
+        if(ttes.length < 2) {
+            return;
+        }
+
+		if(this.singleTimer !== null) {
+			clearTimeout(this.singleTimer);
+			this.singleTimer = null;
+		}
+
+		if(ttes[1] - ttes[0] > 300) {
+			var self = this,
+				elem = $(ev.target),
+				ts = this.options.active,
+				offset = elem.offset(),
+				exy = {
+					elemX: ev.originalEvent.changedTouches[0].pageX - offset.left,
+					elemY: ev.originalEvent.changedTouches[0].pageY - offset.top
+				},
+				dexy = {
+					deltaElemX: exy.elemX - (ts.width >> 1),
+					deltaElemY: exy.elemY - (ts.height >> 1)
+				},
+				lonlat = ts.deltaElem2LonLat(dexy);
+			this.singleTimer = setTimeout(function() {
+				self.options.onPointerSingle(ts, exy, lonlat);
+			}, 300);
             return;
         }
 
@@ -1203,19 +1272,18 @@ function TSTouchHandler(options) {
 TSTouchHandler.prototype = new TSPointerHandler;
 
 (function($) {
-    var tsVersion = "0.2.2",
+    var tsVersion = "0.3.0",
         agent = navigator.userAgent,
         isIOS = (agent.search(/iPhone/) != -1 || agent.search(/iPad/) != -1 || agent.search(/iPod/) != -1),
         isAndroid = (agent.search(/Android/) != -1);
 
     // 今のところ継承禁止 ポリモーフィズム対応待ち
     $.widget("tlsq.tsoverlays", {
-        version: tsVersion,
         options: {
+        	version: tsVersion,
             left: 0,
             top: 0,
-            overlays: [],
-            ids: {},
+            ovls: {},
             mapid: undefined,
             popsid: undefined,
             ucnt: 0
@@ -1247,65 +1315,65 @@ TSTouchHandler.prototype = new TSPointerHandler;
 
         mergeOverlays: function(overlays) {
             var elem = this.element,
-                ids = this.options.ids;
+                ovls = this.options.ovls;
             for(var idx = 0; idx < overlays.length; idx++) {
-                var ol = overlays[idx],
-                    id = ol.attr("id");
+                var ovl = overlays[idx],
+                    id = ovl.attr("id");
 
-                if(!ids[id]) {
-                    ids[id] = ol;
-                    elem.append(ids[id]);
+                if(!ovls[id]) {
+                    ovls[id] = ovl;
+                    elem.append(ovls[id]);
                 }
             }
         },
 
         removeOverlays: function(options) {
-            var ids = this.options.ids;
+            var ovls = this.options.ovls;
 
             if(!options) {
-                for(var id in ids) {
-                    ids[id].remove();
+                for(var id in ovls) {
+                    ovls[id].remove();
                 }
-                this.options.ids = {};
+                this.options.ovls = {};
                 return;
             }
 
             if(options.ids) {
                 for(var idx = 0; idx < options.ids.length; idx++) {
                     var id = options.ids[idx];
-                    if(ids[id]) {
-                        ids[id].remove();
-                        if(ids[id]) delete ids[id];
+                    if(ovls[id]) {
+                        ovls[id].remove();
+                        if(ovls[id]) delete ovls[id];
                     }
                 }
             }
 
             if(options.lon1 !== undefined && options.lon2 !== undefined) {
                 if(options.lon1 < options.lon2) {
-                    for(var id in ids) {
-                        var lon = ids[id].data("lon");
+                    for(var id in ovls) {
+                        var lon = ovls[id].data("lon");
                         if(lon < options.lon1 || options.lon2 < lon) {
-                            ids[id].remove();
-                            if(ids[id]) delete ids[id];
+                            ovls[id].remove();
+                            if(ovls[id]) delete ovls[id];
                         }
                     }
                 } else {
-                    for(var id in ids) {
-                        var lon = ids[id].data("lon");
+                    for(var id in ovls) {
+                        var lon = ovls[id].data("lon");
                         if((0 < lon && lon < options.lon1) || (options.lon2 < lon && lon <= 0)) {
-                            ids[id].remove();
-                            if(ids[id]) delete ids[id];
+                            ovls[id].remove();
+                            if(ovls[id]) delete ovls[id];
                         }
                     }
                 }
             }
 
             if(options.lat1 !== undefined && options.lat2 !== undefined) {
-                for(var id in ids) {
-                    var lat = ids[id].data("lat");
+                for(var id in ovls) {
+                    var lat = ovls[id].data("lat");
                     if(lat < options.lat1 || options.lat2 < lat) {
-                        ids[id].remove();
-                        if(ids[id]) delete ids[id];
+                        ovls[id].remove();
+                        if(ovls[id]) delete ovls[id];
                     }
                 }
             }
@@ -1323,22 +1391,22 @@ TSTouchHandler.prototype = new TSPointerHandler;
                     .css("top", this.options.top + "px");
             }
 
-            var ids = this.options.ids;
-            for(var id in ids) {
-                if(force || ids[id].data("status") == 1) {
+            var ovls = this.options.ovls;
+            for(var id in ovls) {
+                if(force || ovls[id].data("status") == 1) {
                     var res = ts.lonLat2DeltaElem({
-                        lon: ids[id].data("lon"),
-                        lat: ids[id].data("lat")
+                        lon: ovls[id].data("lon"),
+                        lat: ovls[id].data("lat")
                     });
 
                     var left = res.deltaElemX,
                         top = res.deltaElemY;
-                    ids[id].left = left;
-                    ids[id].top = top;
-                    ids[id].css("left", left + "px")
+                    ovls[id].left = left;
+                    ovls[id].top = top;
+                    ovls[id].css("left", left + "px")
                         .css("top", top + "px");
 
-                    ids[id].data("status", 2);
+                    ovls[id].data("status", 2);
                 }
             }
         },
@@ -1382,12 +1450,32 @@ TSTouchHandler.prototype = new TSPointerHandler;
         },
 
         beforeZoom: function(ts, req) {
-            this.element.hide();
+            this.plot(ts, true);
+        },
+
+        inZooming: function(ts, req, dexy) {
+            var now = (new Date()).getTime(),
+            	p0 = (now - req.zoomStart) / (req.zoomEnd - req.zoomStart),
+            	p = p0 > 1 ? 1 : p0,
+            	q = 1 - p,
+                dz = ts.options.zoom - req.zoom,
+                scale = Math.pow(2, -dz * q),
+                ovls = this.options.ovls;
+			if(req.preserve) {
+	            for(var id in ovls) {
+	                ovls[id].css("left", (ovls[id].left - dexy.deltaElemX) * scale + "px")
+	                    .css("top", (ovls[id].top - dexy.deltaElemY) * scale + "px");
+				}
+			} else {
+	            for(var id in ovls) {
+	                ovls[id].css("left", ovls[id].left * scale + "px")
+	                    .css("top", ovls[id].top * scale + "px");
+				}
+	        }
         },
 
         afterZoom: function(ts, req, dexy) {
             this.plot(ts, true);
-            this.element.show();
         },
 
         beforeResize: function(ts, req) {},
@@ -1404,8 +1492,8 @@ TSTouchHandler.prototype = new TSPointerHandler;
     });
 
     $.widget("tlsq.tsoverlay", {
-        version: tsVersion,
         options: {
+        	version: tsVersion,
             id: undefined,
             lon: 0,
             lat: 0,
@@ -1570,12 +1658,11 @@ TSTouchHandler.prototype = new TSPointerHandler;
 
     // 今のところ継承禁止 ポリモーフィズム対応待ち
     $.widget("tlsq.tspopups", {
-        version: tsVersion,
         options: {
+        	version: tsVersion,
             left: 0,
             top: 0,
-            popups: [],
-            ids: {},
+            pops: {},
             mapid: undefined,
             ovlsid: undefined,
             ucnt: 0
@@ -1614,30 +1701,30 @@ TSTouchHandler.prototype = new TSPointerHandler;
                 pelem.attr("id", id);
             }
 
-            var ids = this.options.ids;
-            if(!ids[id]) {
-                ids[id] = pelem;
+            var pops = this.options.pops;
+            if(!pops[id]) {
+                pops[id] = pelem;
                 this.element.append(pelem);
             }
         },
 
         closePopup: function(id) {
-            var ids = this.options.ids;
-            if(ids[id]) {
-                ids[id].remove();
-                if(ids[id]) delete ids[id];
+            var pops = this.options.pops;
+            if(pops[id]) {
+                pops[id].remove();
+                if(pops[id]) delete pops[id];
             }
         },
 
         closePopups: function(options) {
-            var ids = this.options.ids;
+            var pops = this.options.pops;
 
             // 全クローズ
             if(!options) {
-                for(var id in ids) {
-                    ids[id].remove();
+                for(var id in pops) {
+                    pops[id].remove();
                 }
-                this.options.ids = {};
+                this.options.pops = {};
 
                 // 画面中心を原点にリセット
                 var mapid = this.options.mapid,
@@ -1657,9 +1744,9 @@ TSTouchHandler.prototype = new TSPointerHandler;
             if(options.ids) {
                 for(var idx = 0; idx < options.ids.length; idx++) {
                     var id = options.ids[idx];
-                    if(ids[id]) {
-                        ids[id].remove();
-                        if(ids[id]) delete ids[id];
+                    if(pops[id]) {
+                        pops[id].remove();
+                        if(pops[id]) delete pops[id];
                     }
                 }
             }
@@ -1667,21 +1754,21 @@ TSTouchHandler.prototype = new TSPointerHandler;
             // 指定範囲外クローズ
             // TODO: 動作未確認
             if(options.elemX1 !== undefined && options.elemX2 !== undefined) {
-                for(var id in ids) {
-                    var elemX = ids[id].data("elemX");
+                for(var id in pops) {
+                    var elemX = pops[id].data("elemX");
                     if(elemX < options.elemX1 || options.elemX2 < elemX) {
-                        ids[id].remove();
-                        if(ids[id]) delete ids[id];
+                        pops[id].remove();
+                        if(pops[id]) delete pops[id];
                     }
                 }
             }
 
             if(options.elemY1 !== undefined && options.elemY2 !== undefined) {
-                for(var id in ids) {
-                    var elemY = ids[id].data("elemY");
+                for(var id in pops) {
+                    var elemY = pops[id].data("elemY");
                     if(elemY < options.elemY1 || options.elemY2 < elemY) {
-                        ids[id].remove();
-                        if(ids[id]) delete ids[id];
+                        pops[id].remove();
+                        if(pops[id]) delete pops[id];
                     }
                 }
             }
@@ -1731,6 +1818,9 @@ TSTouchHandler.prototype = new TSPointerHandler;
             this.element.hide();
         },
 
+        inZooming: function(ts, req, dexy) {
+        },
+
         afterZoom: function(ts, req, dexy) {
             this.element.show();
         },
@@ -1749,8 +1839,8 @@ TSTouchHandler.prototype = new TSPointerHandler;
     });
 
     $.widget("tlsq.tspopup", {
-        version: tsVersion,
         options: {
+        	version: tsVersion,
             id: undefined,
             margin: 0,
             padding: 0,
@@ -1907,7 +1997,8 @@ TSTouchHandler.prototype = new TSPointerHandler;
             padding: 18,
             borderWidth1: 2,
             borderWidth2: 1,
-            closable: false
+            closable: false,
+            markerElev : 0
         },
 
         _create: function() {
@@ -2066,6 +2157,8 @@ TSTouchHandler.prototype = new TSPointerHandler;
                 elemY: oofs.top - mofs.top - marker.options.marginTop - (frame.height() >> 1)
                     - tmp - marker.options.elev
             });
+
+            this.options.markerElev = marker.options.elev;
         },
 
         close: function() {
@@ -2082,10 +2175,11 @@ TSTouchHandler.prototype = new TSPointerHandler;
             var mapid = this.getMapID(),
                 map = $("#" + mapid),
                 ts = map.tsmap("option", "active"),
-                frame = $("#" + this.options.frameID);
+                frame = $("#" + this.options.frameID),
+                tmp = this.options.borderWidth1;
             ts.onMove({
                 elemX: ts.width >> 1,
-                elemY: (ts.height >> 1) + (frame.height() >> 1)
+                elemY: (ts.height >> 1) + (frame.height() >> 1) + tmp + this.options.markerElev
             });
 
             var self = this,
@@ -2097,8 +2191,8 @@ TSTouchHandler.prototype = new TSPointerHandler;
     });
 
     $.widget("tlsq.tsmap", {
-        version: tsVersion,
         options: {
+        	version: tsVersion,
             width: 0,
             height: 0,
             tss: [],
@@ -2120,9 +2214,13 @@ TSTouchHandler.prototype = new TSPointerHandler;
             inMoving: undefined,
             afterMove: undefined,
             beforeZoom: undefined,
+            inZooming: undefined,
             afterZoom: undefined,
             beforeResize: undefined,
-            afterResize: undefined
+            afterResize: undefined,
+            onDraw: undefined,
+            onLoaded: undefined,
+            onPointerSingle: undefined
         },
 
         _create: function() {
@@ -2134,8 +2232,8 @@ TSTouchHandler.prototype = new TSPointerHandler;
             // 地図
             var elem = this.element
                 .css("position", "relative")
-                .css("width", this.options.isAutoFit ? $(window).width() : this.options.width)
-                .css("height", this.options.isAutoFit ? $(window).height() : this.options.height)
+                .css("width", this.options.isAutoFit ? $(window).width() : this.options.width + "px")
+                .css("height", this.options.isAutoFit ? $(window).height() : this.options.height + "px")
                 .css("z-index", 30000) // 指定しないとSafariがドラッグ中のオーバーレイを更新しなかった
                 .css("overflow", "hidden");
 
@@ -2178,7 +2276,8 @@ TSTouchHandler.prototype = new TSPointerHandler;
                 };
             }
             this.pointerHandler.init({
-                map: this
+                map: this,
+                cvsid: this.options.cvsid
             });
             this._on(canvas, this.pointerHandler.getAdapter());
 
@@ -2495,9 +2594,12 @@ TSTouchHandler.prototype = new TSPointerHandler;
                         inMoving: this.options.inMoving,
                         afterMove: this.options.afterMove,
                         beforeZoom: this.options.beforeZoom,
+                        inZooming: this.options.inZooming,
                         afterZoom: this.options.afterZoom,
                         beforeResize: this.options.beforeResize,
                         afterResize: this.options.afterResize,
+                        onDraw: this.options.onDraw,
+                        onLoaded: this.options.onLoaded,
                         width: width,
                         height: height
                     });
