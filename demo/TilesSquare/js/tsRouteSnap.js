@@ -565,6 +565,7 @@
 			$("#" + this.options.clrid).buttonset("refresh");
 
 			$(this.element).tsroutesnap("updatePoleList");
+			ts.draw();
 		}
 	});
 

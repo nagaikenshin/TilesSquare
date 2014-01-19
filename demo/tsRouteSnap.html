@@ -52,9 +52,10 @@
        lon: 136.9064210,
        lat: 35.1814330,
        zoom: 10,
-       onChangeData: function(ts, toutePoles, color) {
-         var csvText = $("#tsRouteSnap").tsroutesnap("buildCSVText", ts, toutePoles, color);
+       onChangeData: function(ts, routePoles, color) {
+         var csvText = $("#tsRouteSnap").tsroutesnap("buildCSVText", ts, routePoles, color);
          $("#tsRouteSnap_csvText").val(csvText);
+         computeDistance(routePoles);
        }
      });
    });
@@ -67,12 +68,26 @@
      $("#tsRouteSnap").tsroutesnap("reset");
      $("#tsRouteSnap_csvText").val("");
    }
+
+   function computeDistance(routePoles) {
+     var dist = 0;
+     for(var pidx = 1; pidx < routePoles.length; pidx++) {
+       var rdlon = (routePoles[pidx].lon - routePoles[pidx - 1].lon) * Math.PI / 180,
+         rlat1 = routePoles[pidx - 1].lat * Math.PI / 180,
+         rlat2 = routePoles[pidx].lat * Math.PI / 180;
+         dist += 6378.137 * Math.acos(Math.sin(rlat1) * Math.sin(rlat2)
+             + Math.cos(rlat1) * Math.cos(rlat2) * Math.cos(rdlon));
+     }
+     $("#distance").text(dist.toFixed(1));
+   }
   </script>
  </head>
  <body>
   <div id="tsRouteSnapFrame">
    <div id="tsRouteSnap"></div>
    <div id="tsRouteSnapFooter">
+    <span>総距離概算: </span><span id="distance">0.0</span><span> km</span>
+    &nbsp;&nbsp;
     <label for="tsRouteSnap_csvText">CSV文字列: </label>
     <input id="tsRouteSnap_csvText" type="text" />
     <input type="button" value="読込" onclick="loadCSVText();" />
