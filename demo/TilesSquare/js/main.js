@@ -1,11 +1,11 @@
 /*!
- * TilesSquare Maps on jQuery v0.3.0
+ * TilesSquare Maps on jQuery v0.3.1
  * http://tilessquare.org/
  *
- * Copyright 2013-2014 NAGAI Kenshin
+ * Copyright 2013-2015 NAGAI Kenshin
  * Released under the MIT license
  *
- * Date: 2014-1-5
+ * Date: 2015-09-26
  */
 
 // 引数なしを弾く機能付きの引数マージ
@@ -1000,6 +1000,7 @@ function TSMouseHandler(options) {
         map.pageX = 0;
         map.pageY = 0;
         map.singleTimer = null;
+        map.lastWheel = 0;
     };
 
     this.onMouseDown = function(ev) {
@@ -1078,6 +1079,11 @@ function TSMouseHandler(options) {
         if(delta === undefined) {
             return;
         }
+        if(this.lastWheel > ev.timeStamp - 80) {
+        	return;
+        }
+        this.lastWheel = ev.timeStamp;
+
         var elem = $(ev.target),
             offset = elem.offset();
         this.onZoom({
@@ -1272,7 +1278,7 @@ function TSTouchHandler(options) {
 TSTouchHandler.prototype = new TSPointerHandler;
 
 (function($) {
-    var tsVersion = "0.3.0",
+    var tsVersion = "0.3.1",
         agent = navigator.userAgent,
         isIOS = (agent.search(/iPhone/) != -1 || agent.search(/iPad/) != -1 || agent.search(/iPod/) != -1),
         isAndroid = (agent.search(/Android/) != -1);
