@@ -1,11 +1,11 @@
 /*!
- * TilesSquare Maps on jQuery v0.3.1
+ * TilesSquare Maps on jQuery v0.3.2
  * http://tilessquare.org/
  *
  * Copyright 2013-2015 NAGAI Kenshin
  * Released under the MIT license
  *
- * Date: 2015-09-26
+ * Date: 2015-09-30
  */
 
 // 引数なしを弾く機能付きの引数マージ
@@ -245,6 +245,7 @@ function TilesSquare(options) {
         this.initialized = true;
         this.isIOS = options.isIOS;
         this.isAndroid = options.isAndroid;
+        this.isWindowsPhone = options.isWindowsPhone;
         this.options.interval = options.interval;
         this.cvsid = options.cvsid;
         this.cdtid = options.cdtid;
@@ -555,6 +556,9 @@ function TilesSquare(options) {
         if(zoom == this.options.zoom) {
             return;
         }
+//        if(this.drawTimer) {
+//        	return;
+//        }
 
         var now = (new Date()).getTime();
         this.zoomReq = {
@@ -585,6 +589,10 @@ function TilesSquare(options) {
         this.draw();
     };
 
+    this.retrieve = function() {};
+
+    this.draw = function() {};
+
     this.onResize = function(options) {
         var resizeReq = {
             width: this.width,
@@ -603,6 +611,10 @@ function TilesSquare(options) {
     };
 
     this.wheel2deltaZ = function(wheel) {
+    	if(wheel < -4) return -Math.log(-wheel) / Math.LN2;
+    	else if(wheel > 4) return Math.log(wheel) / Math.LN2;
+    	else if(-2 < wheel && wheel < 0) return -1; 
+    	else if(0 <= wheel && wheel < 2) return 1; 
         return wheel / 2;
     };
 
@@ -730,6 +742,7 @@ function OSMTilesSquare(options) {
     };
 
     this.drawTimer = null;
+    this.drawNow = -1;
 
     this.draw = function() {
         if(!this.activated) {
@@ -739,11 +752,13 @@ function OSMTilesSquare(options) {
         if(this.drawTimer !== null) {
             clearTimeout(this.drawTimer);
             this.drawTimer = null;
+            this.drawNow = -1;
         }
 
         var tsize = this.options.tsize,
             now = (new Date()).getTime(),
             canvas = document.getElementById(this.cvsid);
+        this.drawNow = now;
         if(!canvas.getContext) {
             return;
         }
@@ -1076,10 +1091,13 @@ function TSMouseHandler(options) {
     };
 
     this.onMouseWheel = function(ev, delta) {
+        ev.preventDefault();
         if(delta === undefined) {
             return;
         }
-        if(this.lastWheel > ev.timeStamp - 80) {
+//        if(this.lastWheel > ev.timeStamp - 50) {
+//        if(this.lastWheel > ev.timeStamp - 200) {
+        if(this.lastWheel > ev.timeStamp - this.options.active.options.zoomSpan) {
         	return;
         }
         this.lastWheel = ev.timeStamp;
@@ -1278,10 +1296,11 @@ function TSTouchHandler(options) {
 TSTouchHandler.prototype = new TSPointerHandler;
 
 (function($) {
-    var tsVersion = "0.3.1",
+    var tsVersion = "0.3.2",
         agent = navigator.userAgent,
         isIOS = (agent.search(/iPhone/) != -1 || agent.search(/iPad/) != -1 || agent.search(/iPod/) != -1),
-        isAndroid = (agent.search(/Android/) != -1);
+        isAndroid = (agent.search(/Android/) != -1),
+        isWindowsPhone = (agent.search(/Windows Phone/) != -1);
 
     // 今のところ継承禁止 ポリモーフィズム対応待ち
     $.widget("tlsq.tsoverlays", {
@@ -1460,7 +1479,7 @@ TSTouchHandler.prototype = new TSPointerHandler;
         },
 
         inZooming: function(ts, req, dexy) {
-            var now = (new Date()).getTime(),
+            var now = ts.drawNow > 0 ? ts.drawNow : (new Date()).getTime(),
             	p0 = (now - req.zoomStart) / (req.zoomEnd - req.zoomStart),
             	p = p0 > 1 ? 1 : p0,
             	q = 1 - p,
@@ -2206,8 +2225,8 @@ TSTouchHandler.prototype = new TSPointerHandler;
             overlays: undefined,
             lon: 139.6916667,
             lat: 35.6894444,
-            hasArrows: !(isIOS || isAndroid),
-            hasSlider: !(isIOS || isAndroid),
+            hasArrows: !(isIOS || isAndroid || isWindowsPhone),
+            hasSlider: !(isIOS || isAndroid || isWindowsPhone),
             hasPlsMns: true,
             hasScale: true,
             active: undefined,
@@ -2232,6 +2251,7 @@ TSTouchHandler.prototype = new TSPointerHandler;
         _create: function() {
             this.options.isIOS = isIOS;
             this.options.isAndroid = isAndroid;
+            this.options.isWindowsPhone = isWindowsPhone;
 
             this.options.isAutoFit = (this.options.width == 0 && this.options.height == 0);
 
@@ -2270,7 +2290,7 @@ TSTouchHandler.prototype = new TSPointerHandler;
                 }
             };
 
-            if("ontouchstart" in window) {
+            if("ontouchstart" in window && (isIOS || isAndroid || isWindowsPhone)) {
                 this.pointerHandler = new TSTouchHandler();
                 this.pinch2deltaZ = function(pinch) {
                     return (this.options.active ? this.options.active.pinch2deltaZ(pinch) : 0);
@@ -2579,6 +2599,7 @@ TSTouchHandler.prototype = new TSPointerHandler;
                     tss[actvIdx].init({
                         isIOS: this.options.isIOS,
                         isAndroid: this.options.isAndroid,
+                        isWindowsPhone: this.options.isWindowsPhone,
                         interval: this.options.interval,
                         cvsid: cvsid,
                         cdtid: this.options.cdtid,
