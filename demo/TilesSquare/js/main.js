@@ -1,11 +1,11 @@
 /*!
- * TilesSquare Maps on jQuery v0.3.2
+ * TilesSquare Maps on jQuery v0.3.3
  * http://tilessquare.org/
  *
  * Copyright 2013-2015 NAGAI Kenshin
  * Released under the MIT license
  *
- * Date: 2015-09-30
+ * Date: 2015-10-29
  */
 
 // 引数なしを弾く機能付きの引数マージ
@@ -1164,7 +1164,8 @@ function TSTouchHandler(options) {
 
         if(tc.length > 0) {
             ttcs.push({
-               ts: ev.timeStamp,
+//               ts: ev.timeStamp,
+               ts: (new Date()).getTime(),
                tc: tc
             });
             if(ttcs.length == 3) {
@@ -1175,7 +1176,8 @@ function TSTouchHandler(options) {
 
     this.pushTouchEnds = function(ev) {
         var ttes = this.touchEnds;
-        ttes.push(ev.timeStamp)
+//        ttes.push(ev.timeStamp)
+        ttes.push((new Date()).getTime())
         if(ttes.length == 3) {
             ttes.shift();
         }
@@ -1296,7 +1298,7 @@ function TSTouchHandler(options) {
 TSTouchHandler.prototype = new TSPointerHandler;
 
 (function($) {
-    var tsVersion = "0.3.2",
+    var tsVersion = "0.3.3",
         agent = navigator.userAgent,
         isIOS = (agent.search(/iPhone/) != -1 || agent.search(/iPad/) != -1 || agent.search(/iPod/) != -1),
         isAndroid = (agent.search(/Android/) != -1),
