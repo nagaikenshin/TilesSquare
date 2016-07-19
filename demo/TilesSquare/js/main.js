@@ -1,11 +1,11 @@
 /*!
- * TilesSquare Maps on jQuery v0.3.3
+ * TilesSquare Maps on jQuery v0.3.4
  * http://tilessquare.org/
  *
- * Copyright 2013-2015 NAGAI Kenshin
+ * Copyright 2013-2016 NAGAI Kenshin
  * Released under the MIT license
  *
- * Date: 2015-10-29
+ * Date: 2016-07-19
  */
 
 // 引数なしを弾く機能付きの引数マージ
@@ -250,7 +250,7 @@ function TilesSquare(options) {
         this.cvsid = options.cvsid;
         this.cdtid = options.cdtid;
         this.hasArrows = options.hasArrows;
-        this.arw1id = options.arw1id;
+        this.arwids = options.arwids;
         this.hasSlider = options.hasSlider;
         this.sldid = options.sldid;
         this.hasPlsMns = options.hasPlsMns;
@@ -411,7 +411,8 @@ function TilesSquare(options) {
             prj: prj1,
             deltaZ: (options.deltaZ === undefined ? 0 : options.deltaZ),
             deltaElemX: options.deltaElemX,
-            deltaElemY: options.deltaElemY
+            deltaElemY: options.deltaElemY,
+            preserve: (options.preserve === undefined ? options.deltaZ !== undefined : options.preserve)
         });
 
         return prj2.getLonLat();
@@ -574,7 +575,8 @@ function TilesSquare(options) {
         var lonlat = this.deltaElem2LonLat({
             deltaZ: (preserve ? deltaZ : 0),
             deltaElemX: elemX - (this.width >> 1),
-            deltaElemY: elemY - (this.height >> 1)
+            deltaElemY: elemY - (this.height >> 1),
+            preserve: preserve
         });
         this.setCenter({
             zoom: zoom,
@@ -677,7 +679,7 @@ function OSMTilesSquare(options) {
     this.deltaProjection = function(options) {
         var xy = options.prj.getXY(),
             prm = 1;
-        if(options.deltaZ) {
+        if(options.deltaZ && options.preserve) {
             var zd2 = Math.pow(2, options.deltaZ);
             prm = 1 - 1 / zd2;
         }
@@ -816,16 +818,23 @@ function OSMTilesSquare(options) {
                     q = 1 - p,
 
                     dz = this.options.zoom - zreq.zoom,
+                    prm = zreq.preserve ? 1 : -Math.pow(2, dz),
                     lonlat = this.deltaElem2LonLat({
                         deltaZ: (zreq.preserve ? -dz * q : 0),
-                        deltaElemX: (zreq.elemX - (this.width >> 1)),
-                        deltaElemY: (zreq.elemY - (this.height >> 1))
+                        deltaElemX: prm * (zreq.elemX - (this.width >> 1)),
+                        deltaElemY: prm * (zreq.elemY - (this.height >> 1)),
+                        preserve: zreq.preserve
                     });
 
-                lon = lonlat.lon;
-                lat = lonlat.lat;
+                if(zreq.preserve) {
+					lon = lonlat.lon;
+					lat = lonlat.lat;
+				} else {
+                    lon = lon * p + lonlat.lon * q;
+                    lat = lat * p + lonlat.lat * q;
+                }
 
-                var scale = Math.pow(2, dz * p)
+                var scale = Math.pow(2, dz * p);
                 mvs[0].scale = scale / Math.pow(2, dz);
                 mvs[0].alpha = p;
                 mvs.unshift({
@@ -1298,7 +1307,7 @@ function TSTouchHandler(options) {
 TSTouchHandler.prototype = new TSPointerHandler;
 
 (function($) {
-    var tsVersion = "0.3.3",
+    var tsVersion = "0.3.4",
         agent = navigator.userAgent,
         isIOS = (agent.search(/iPhone/) != -1 || agent.search(/iPad/) != -1 || agent.search(/iPod/) != -1),
         isAndroid = (agent.search(/Android/) != -1),
@@ -1488,17 +1497,11 @@ TSTouchHandler.prototype = new TSPointerHandler;
                 dz = ts.options.zoom - req.zoom,
                 scale = Math.pow(2, -dz * q),
                 ovls = this.options.ovls;
-			if(req.preserve) {
-	            for(var id in ovls) {
-	                ovls[id].css("left", (ovls[id].left - dexy.deltaElemX) * scale + "px")
-	                    .css("top", (ovls[id].top - dexy.deltaElemY) * scale + "px");
-				}
-			} else {
-	            for(var id in ovls) {
-	                ovls[id].css("left", ovls[id].left * scale + "px")
-	                    .css("top", ovls[id].top * scale + "px");
-				}
-	        }
+
+            for(var id in ovls) {
+				ovls[id].css("left", (ovls[id].left - dexy.deltaElemX) * scale + "px")
+					.css("top", (ovls[id].top - dexy.deltaElemY) * scale + "px");
+			}
         },
 
         afterZoom: function(ts, req, dexy) {
