@@ -1,11 +1,11 @@
 /*!
- * TilesSquare Maps on jQuery v0.3.4
+ * TilesSquare Maps on jQuery v0.3.5
  * http://tilessquare.org/
  *
  * Copyright 2013-2016 NAGAI Kenshin
  * Released under the MIT license
  *
- * Date: 2016-07-19
+ * Date: 2016-07-21
  */
 
 // 引数なしを弾く機能付きの引数マージ
@@ -713,7 +713,7 @@ function OSMTilesSquare(options) {
             cxy = cPrj.getXY(),
 
         // タイル読み込み始点・終点を計算
-            pgrsvs = [ 1, 1.1 ],  // 中央から読み込み、さらに先読み
+            pgrsvs = [ 0.01, 1, 1.1 ],  // 中央から読み込み、さらに先読み
             dldrs = this.options.dldrs;
         for(var idx = 0; idx < pgrsvs.length; idx++) {
             var xno1 = Math.floor(cxy.x - this.lhalf * pgrsvs[idx]),
@@ -830,8 +830,17 @@ function OSMTilesSquare(options) {
 					lon = lonlat.lon;
 					lat = lonlat.lat;
 				} else {
-                    lon = lon * p + lonlat.lon * q;
-                    lat = lat * p + lonlat.lat * q;
+					if(dz < 0) {
+						var p2 = Math.pow(p, 2 * -dz),
+							q2 = 1 - p2;
+						lon = lon * p2 + lonlat.lon * q2;
+						lat = lat * p2 + lonlat.lat * q2;
+					} else {
+						var q2 = Math.pow(q, 2 * dz),
+							p2 = 1 - q2;
+						lon = lon * p2 + lonlat.lon * q2;
+						lat = lat * p2 + lonlat.lat * q2;
+					}
                 }
 
                 var scale = Math.pow(2, dz * p);
@@ -1307,7 +1316,7 @@ function TSTouchHandler(options) {
 TSTouchHandler.prototype = new TSPointerHandler;
 
 (function($) {
-    var tsVersion = "0.3.4",
+    var tsVersion = "0.3.5",
         agent = navigator.userAgent,
         isIOS = (agent.search(/iPhone/) != -1 || agent.search(/iPad/) != -1 || agent.search(/iPod/) != -1),
         isAndroid = (agent.search(/Android/) != -1),
