@@ -130,8 +130,8 @@
 				width: this.options.width,
 				height: this.options.height,
 				tss: [
-					new OSMTilesSquare()
-//					new MapQuestOSMTilesSquare()
+//					new OSMTilesSquare()
+					new GSIGoJpStdTilesSquare()
 				],
 	            lon: this.options.lon,
 	            lat: this.options.lat,

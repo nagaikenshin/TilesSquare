@@ -1,11 +1,11 @@
 /*!
- * TilesSquare Maps on jQuery v0.3.5
+ * TilesSquare Maps on jQuery v0.3.6
  * http://tilessquare.org/
  *
- * Copyright 2013-2016 NAGAI Kenshin
+ * Copyright 2013-2018 NAGAI Kenshin
  * Released under the MIT license
  *
- * Date: 2016-07-21
+ * Date: 2018-05-24
  */
 
 // 引数なしを弾く機能付きの引数マージ
@@ -190,21 +190,20 @@ function TSOSMDownloader(options) {
 };
 TSOSMDownloader.prototype = new TSDownloader;
 
-function TSMapQuestOSMDownloader(options) {
+function TSGSIGoJpStdDownloader(options) {
     if(tsAWithB(this, {
-            subDomain: "1"
         }, options)) return;
     TSDownloader.call(this, this.options);
 
     this.getTileCache = function(prj) {
         var xy = prj.getXY();
         return new TSImageCache({
-            uri: "http://otile" + this.options.subDomain + ".mqcdn.com/tiles/1.0.0/osm/" + ~~prj.options.zoom + "/"
+            uri: "https://cyberjapandata.gsi.go.jp/xyz/std/" + ~~prj.options.zoom + "/"
                 + ~~xy.x + "/" + ~~xy.y + ".png"
         });
     };
 };
-TSMapQuestOSMDownloader.prototype = new TSDownloader;
+TSGSIGoJpStdDownloader.prototype = new TSDownloader;
 
 function TSLocalDownloader(options) {
     if(tsAWithB(this, {
@@ -222,9 +221,9 @@ TSLocalDownloader.prototype = new TSDownloader;
 
 function TilesSquare(options) {
     if(tsAWithB(this, {
-            interval: 50,
+            interval: 50, // TODO: undefinedになっている？
             moveSpan: 700,
-            zoomSpan: 700,
+            zoomSpan: 400,
             id: "default",
             dldrs: [],
             minZoom: 0,
@@ -314,7 +313,7 @@ function TilesSquare(options) {
             hs = [ 1, 2, 3, 5 ],
             max = 99;
         for(var st = start; st >= 1 && s == 0; st /= 10) {
-            if(st * r > max * 100) continue; 
+            if(st * r > max * 100) continue;
             for(var hi = hs.length - 1; hi >= 0; hi--) {
                 sc = hs[hi] * st;
                 if(sc * r < max) {
@@ -437,6 +436,7 @@ function TilesSquare(options) {
     this.dragTimer = null;
     this.deltaElemX = 0;
     this.deltaElemY = 0;
+    this.dragPhase = 0; // 0: None, 1: TBC, 2: Last
 
     this.onDrag = function(options) {
         if(this.dragTimer === null) {
@@ -444,8 +444,9 @@ function TilesSquare(options) {
             this.dragTimer = setTimeout(function() { self.doDrag(); }, this.options.interval);
         }
 
-        this.deltaElemX += options.deltaElemX;
-        this.deltaElemY += options.deltaElemY;
+        this.deltaElemX += options.deltaElemX ? options.deltaElemX : 0;
+        this.deltaElemY += options.deltaElemY ? options.deltaElemY : 0;
+        this.dragPhase = options.phase ? options.phase : 0;
     };
 
     this.doDrag = function() {
@@ -453,16 +454,23 @@ function TilesSquare(options) {
 
         var options = {
             deltaElemX: this.deltaElemX,
-            deltaElemY: this.deltaElemY
+            deltaElemY: this.deltaElemY,
+            phase: this.dragPhase
         };
         this.deltaElemX = 0;
         this.deltaElemY = 0;
-        var lonlat = this.deltaElem2LonLat(options);
+        if(options.phase != 1) this.dragPhase = 0;
+        if(options.deltaElemX || options.deltaElemY) {
+            if(options.phase < 2 && Math.abs(options.deltaElemX) < 1 && Math.abs(options.deltaElemY) < 1) {
+                return;
+            }
 
-        this.setCenter({
-            lon: lonlat.lon,
-            lat: lonlat.lat
-        });
+            var lonlat = this.deltaElem2LonLat(options);
+            this.setCenter({
+                lon: lonlat.lon,
+                lat: lonlat.lat
+            });
+        }
 
         this.retrieve();
         if(this.beforeDrag) this.beforeDrag(this, options);
@@ -517,7 +525,7 @@ function TilesSquare(options) {
                 var self = this;
                 this.zoomTimer = setTimeout(function() { self.doZoom(true); }, this.options.interval);
             }
-    
+
             this.deltaZ += options.deltaZ;
         } else {
             // 即時ズーム
@@ -615,8 +623,8 @@ function TilesSquare(options) {
     this.wheel2deltaZ = function(wheel) {
     	if(wheel < -4) return -Math.log(-wheel) / Math.LN2;
     	else if(wheel > 4) return Math.log(wheel) / Math.LN2;
-    	else if(-2 < wheel && wheel < 0) return -1; 
-    	else if(0 <= wheel && wheel < 2) return 1; 
+    	else if(-2 < wheel && wheel < 0) return -1;
+    	else if(0 <= wheel && wheel < 2) return 1;
         return wheel / 2;
     };
 
@@ -720,7 +728,7 @@ function OSMTilesSquare(options) {
                 xno2 = Math.floor(cxy.x + this.rhalf * pgrsvs[idx]),
                 yno1 = Math.floor(cxy.y - this.thalf * pgrsvs[idx]),
                 yno2 = Math.floor(cxy.y + this.bhalf * pgrsvs[idx]);
-    
+
             for(var xno = xno1; xno <= xno2; xno++) {
                 for(var yno = yno1; yno <= yno2; yno++) {
                     var prj = this.getProjection({
@@ -735,7 +743,7 @@ function OSMTilesSquare(options) {
                         if(this.dldrIdx >= dldrs.length) {
                             this.dldrIdx = 0;
                         }
-        
+
                         this.caches[ckey] = dldr.getTileCache(prj);
                     }
                 }
@@ -809,6 +817,7 @@ function OSMTilesSquare(options) {
 
                 moveReq = this.moveReq;
                 this.moveReq = undefined;
+                this.dragPhase = 0;
             }
         } else if(this.zoomReq) {
             var zreq = this.zoomReq;
@@ -858,6 +867,7 @@ function OSMTilesSquare(options) {
 
                 zoomReq = this.zoomReq;
                 this.zoomReq = undefined;
+                this.dragPhase = 0;
             }
         }
 
@@ -872,14 +882,14 @@ function OSMTilesSquare(options) {
                     lat: lat
                 }),
                 cxy = cPrj.getXY(),
-    
+
             // タイル表示始点・終点を計算
                 scale = (mv.scale < 0.5 ? 0.5 : mv.scale),
                 xno1 = Math.floor(cxy.x - this.lhalf / scale),
                 xno2 = Math.floor(cxy.x + this.rhalf / scale),
                 yno1 = Math.floor(cxy.y - this.thalf / scale),
                 yno2 = Math.floor(cxy.y + this.bhalf / scale),
-    
+
                 xofs = cxy.x - this.lhalf / mv.scale,
                 yofs = cxy.y - this.thalf / mv.scale;
             for(var xno = xno1; xno <= xno2; xno++) {
@@ -889,7 +899,7 @@ function OSMTilesSquare(options) {
                         x: xno,
                         y: yno
                     });
-        
+
                     var cache = this.caches[prj.makeKey()],
                         x = Math.round((xno - xofs) * tsize),
                         y = Math.round((yno - yofs) * tsize),
@@ -993,28 +1003,17 @@ function OSMTilesSquare(options) {
 };
 OSMTilesSquare.prototype = new TilesSquare;
 
-function MapQuestOSMTilesSquare(options) {
+function GSIGoJpStdTilesSquare(options) {
     if(tsAWithB(this, {
-            maxZoom: 19,
-            credit: "Tiles Courtesy of <a href=\"http://www.mapquest.com/\" target=\"_blank\">MapQuest</a> <img src=\"http://developer.mapquest.com/content/osm/mq_logo.png\" />, © <a href=\"http://www.openstreetmap.org/\">OpenStreetMap</a> contributors",
+            maxZoom: 18,
+            credit: "<a href=\"http://maps.gsi.go.jp/development/ichiran.html\">地理院タイル（標準地図）</a>",
             dldrs: [
-                new TSMapQuestOSMDownloader({
-                    subDomain: "1"
-                }),
-                new TSMapQuestOSMDownloader({
-                    subDomain: "2"
-                }),
-                new TSMapQuestOSMDownloader({
-                    subDomain: "3"
-                }),
-                new TSMapQuestOSMDownloader({
-                    subDomain: "4"
-                })
+                new TSGSIGoJpStdDownloader({})
             ]
         }, options)) return;
     OSMTilesSquare.call(this, this.options);
 };
-MapQuestOSMTilesSquare.prototype = new OSMTilesSquare;
+GSIGoJpStdTilesSquare.prototype = new OSMTilesSquare;
 
 function TSPointerHandler(options) {
     if(tsAWithB(this, {
@@ -1044,7 +1043,15 @@ function TSMouseHandler(options) {
     };
 
     this.onMouseUp = function(ev) {
-    	if(!this.isMouseMove) {
+    	if(this.isMouseMove) {
+            this.onDrag({
+//                deltaElemX: this.pageX - ev.pageX,
+//                deltaElemY: this.pageY - ev.pageY
+				phase: 2
+            });
+            this.pageX = ev.pageX;
+            this.pageY = ev.pageY;
+        } else {
     		if(this.options.onPointerSingle) {
 				if(this.singleTimer !== null) {
 					clearTimeout(this.singleTimer);
@@ -1076,20 +1083,32 @@ function TSMouseHandler(options) {
     this.onMouseMove = function(ev) {
         this.isMouseMove = true;
         if(this.isMouseDown) {
-            var canvas = document.getElementById(this.options.cvsid);
-            $(canvas).css("cursor", "all-scroll");
-            this.onDrag({
-                deltaElemX: this.pageX - ev.pageX,
-                deltaElemY: this.pageY - ev.pageY
-            });
-            this.pageX = ev.pageX;
-            this.pageY = ev.pageY;
+            if(Math.abs(this.pageX - ev.pageX) > 0 || Math.abs(this.pageY - ev.pageY) > 0) {
+                var canvas = document.getElementById(this.options.cvsid);
+                $(canvas).css("cursor", "all-scroll");
+                this.onDrag({
+                    deltaElemX: this.pageX - ev.pageX,
+                    deltaElemY: this.pageY - ev.pageY,
+                    phase: 1
+                });
+                this.pageX = ev.pageX;
+                this.pageY = ev.pageY;
+            }
         }
     };
 
     this.onMouseOut = function(ev) {
-        this.isMouseDown = false;
+        if(this.isMouseMove) { // TODO: 試験追加
+            if(this.dragPhase == 1) {
+                this.onDrag({
+                    phase: 2
+                });
+                this.pageX = ev.pageX;
+                this.pageY = ev.pageY;
+            }
+        }
         this.isMouseMove = false;
+
         var canvas = document.getElementById(this.options.cvsid);
         $(canvas).css("cursor", "default");
     };
@@ -1138,7 +1157,7 @@ function TSMouseHandler(options) {
             dblclick: this.onDoubleClick,
             mousewheel: this.onMouseWheel,
             DOMMouseScroll: this.onMouseWheel,
-    
+
             selectstart: function() { return false; },
             dragstart: function() { return false; }
         }
@@ -1194,8 +1213,8 @@ function TSTouchHandler(options) {
 
     this.pushTouchEnds = function(ev) {
         var ttes = this.touchEnds;
-//        ttes.push(ev.timeStamp)
-        ttes.push((new Date()).getTime())
+//        ttes.push(ev.timeStamp);
+        ttes.push((new Date()).getTime());
         if(ttes.length == 3) {
             ttes.shift();
         }
@@ -1228,7 +1247,8 @@ function TSTouchHandler(options) {
             // ドラッグ
             this.onDrag({
                 deltaElemX: tc1[0].elemX - tc2[0].elemX,
-                deltaElemY: tc1[0].elemY - tc2[0].elemY
+                deltaElemY: tc1[0].elemY - tc2[0].elemY,
+                phase: 1
             });
         } else if(tc1.length == 2) {
             // ピンチ
@@ -1251,13 +1271,30 @@ function TSTouchHandler(options) {
         // ダブルタップ判定
         var ttes = this.touchEnds;
         if(ttes.length < 2) {
+            var ttcs = this.touches;
+            if(ttcs.length < 2) {
+                return;
+            }
+
+            var tc1 = ttcs[0].tc,
+                tc2 = ttcs[1].tc;
+            if(tc1.length != 1 || tc2.length != 1) {
+                return;
+            }
+
+            this.onDrag({
+//                deltaElemX: tc1[0].elemX - tc2[0].elemX,
+//                deltaElemY: tc1[0].elemY - tc2[0].elemY,
+                phase: 2
+            });
+
             return;
         }
 
-		if(this.singleTimer !== null) {
-			clearTimeout(this.singleTimer);
-			this.singleTimer = null;
-		}
+        if(this.singleTimer !== null) {
+            clearTimeout(this.singleTimer);
+            this.singleTimer = null;
+        }
 
 		if(ttes[1] - ttes[0] > 300) {
 			var self = this,
@@ -1678,7 +1715,7 @@ TSTouchHandler.prototype = new TSPointerHandler;
                         tid = eid + "_tooltip";
                     $("#" + tid).tstooltip("close");
                 }
-            }); 
+            });
         },
 
         // popupsから見たマーカーの指している地点の座標
