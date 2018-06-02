@@ -183,7 +183,7 @@ function TSOSMDownloader(options) {
     this.getTileCache = function(prj) {
         var xy = prj.getXY();
         return new TSImageCache({
-            uri: "http://" + this.options.subDomain + ".tile.openstreetmap.org/" + ~~prj.options.zoom + "/"
+            uri: "https://" + this.options.subDomain + ".tile.openstreetmap.org/" + ~~prj.options.zoom + "/"
                 + ~~xy.x + "/" + ~~xy.y + ".png"
         });
     };
@@ -636,7 +636,7 @@ function TilesSquare(options) {
 function OSMTilesSquare(options) {
     if(tsAWithB(this, {
             tsize: 256,
-            credit: "© <a href=\"http://www.openstreetmap.org/\">OpenStreetMap</a> contributors",
+            credit: "© <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors",
             dldrs: [
 //                new TSLocalDownloader({
 //                    bpath: "tiles/"
